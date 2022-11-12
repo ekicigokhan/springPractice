@@ -3,10 +3,9 @@ package Kodlama.io.Devs.dataAccess.abstracts;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import Kodlama.io.Devs.entities.concretes.Language;
+import Kodlama.io.Devs.entities.concretes.Technology;
 
 @Repository
-public interface LanguageRepository extends JpaRepository<Language, Integer> {
-	
-	Language findLanguageById(int id);
+public interface TechnologyRepository extends JpaRepository<Technology, Integer>{
+
 }

@@ -1,12 +1,18 @@
 package Kodlama.io.Devs.business.concretes;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import Kodlama.io.Devs.business.abstracts.LanguageService;
-
+import Kodlama.io.Devs.business.requests.languageRequests.CreateLanguageRequest;
+import Kodlama.io.Devs.business.requests.languageRequests.DeleteLanguageRequests;
+import Kodlama.io.Devs.business.requests.languageRequests.UpdateLanguageRequests;
+import Kodlama.io.Devs.business.responses.languageResponses.GetAllLanguagesResponse;
+import Kodlama.io.Devs.business.responses.languageResponses.GetByIdLanguageResponse;
 import Kodlama.io.Devs.dataAccess.abstracts.LanguageRepository;
 import Kodlama.io.Devs.entities.concretes.Language;
 
@@ -15,76 +21,108 @@ public class LanguageManager implements LanguageService {
 
 	private LanguageRepository languageRepository;
 
-	@Autowired
+	
 	public LanguageManager(LanguageRepository languageRepository) {
 		this.languageRepository = languageRepository;
+
 	}
 
 	@Override
-	public List<Language> getAllLanguages() {
+	public List<GetAllLanguagesResponse> getAll() {
 
-		return languageRepository.getAllLanguages();
-	}
+		List<Language> languages = languageRepository.findAll();
+		List<GetAllLanguagesResponse> gAllResponse = new ArrayList<>();
 
-	@Override
-	public void add(Language language) throws Exception {
+		for (Language lng : languages) {
+			GetAllLanguagesResponse responseItem = new GetAllLanguagesResponse();
+			responseItem.setId(lng.getId());
+			responseItem.setName(lng.getName());
 
-		if (isIdExist(language.getId())) {
-			throw new Exception("Bu ID zaten kayıtlı !");
+			gAllResponse.add(responseItem);
 		}
-		if (isNameValid(language.getName())) {
-			languageRepository.add(language);
-		}
 
+		return gAllResponse;
 	}
 
 	@Override
-	public void delete(int id) throws Exception {
+	public void add(CreateLanguageRequest createLanguageRequest) throws Exception {
 
-		if (!isIdExist(id)) {
-			throw new Exception("ID bulunamadı  !");
+		if (createLanguageRequest.getName().isBlank()) {
+			throw new Exception("Lütfen bir programlama dili ekleyiniz.");  
 		}
 		
-		languageRepository.delete(id);
+		if (isNameExist(createLanguageRequest.getName())) {
+			throw new Exception("Eklemek istediğiniz programlama dili zaten mevcut.");
+		}
+		
+		Language language = new Language(); 
+		language.setName(createLanguageRequest.getName());
+
+		languageRepository.save(language);
 
 	}
 
 	@Override
-	public void update(int id, Language language) throws Exception {
+	public void delete(DeleteLanguageRequests deleteLanguageRequests) throws Exception {
+		if (!isIdExist(deleteLanguageRequests.getId())) {
+			throw new Exception("Silmek istediğiniz İD ile programlama diline ait İD uyuşmuyor.");
 
-		if (!isIdExist(id)) {
-			throw new Exception("İD bulunamadı !");
 		}
-		if (isNameValid(language.getName())) {
-			languageRepository.update(id, language);
-		}
+
+		Language language = new Language();
+		language.setId(deleteLanguageRequests.getId());
+
+		languageRepository.delete(language);
+
 	}
 
 	@Override
-	public Language getById(int id) throws Exception {
-		if (!isIdExist(id)) {
-			throw new Exception("ID bulunamadı.");
+	public void update(UpdateLanguageRequests updateLanguageRequests) throws Exception {
+
+		if (isNameExist(updateLanguageRequests.getName())) {
+			throw new Exception("Aynı isimde bir programlama dili zaten mevcut.");
 		}
-		return languageRepository.getById(id);
+		if (!isIdExist(updateLanguageRequests.getId())) {
+			throw new Exception("Bu ID ile tanımlanmış programlama dili mevcut değil.");
+		}
+		Language language = new Language();
+		language.setId(updateLanguageRequests.getId());
+		language.setName(updateLanguageRequests.getName());
+
+		languageRepository.save(language);
+
 	}
 
-	public boolean isNameValid(String language) throws Exception {
-
-		if (language.isBlank()) {
-			throw new Exception("Boş geçilemez !");
+	@Override
+	public GetByIdLanguageResponse getByIdLanguage(int id) throws Exception {
+		if (!isIdExist(id)) {
+			throw new Exception("Bu ID ile tanımlanmış programlama dili yok !");
 		}
 
-		for (Language lng : getAllLanguages()) {
-			if (lng.getName().equalsIgnoreCase(language)) {
-				throw new Exception("Bu dil zaten tanımlanmış.");
+//		Optional<Language> lOptional = languageRepository.findById(id);
+		
+		
+		Language item = this.languageRepository.findById(id).get();
+
+		GetByIdLanguageResponse getByIdLanguageResponse = new GetByIdLanguageResponse();
+		getByIdLanguageResponse.setId(item.getId());
+		getByIdLanguageResponse.setName(item.getName());
+
+		return getByIdLanguageResponse;
+	}
+
+	private boolean isNameExist(String name) {
+		for (Language lng : languageRepository.findAll()) {
+			if (lng.getName().equalsIgnoreCase(name)) {
+				
+				return true;
 			}
-
 		}
-		return true;
+		return false;
 	}
 
-	public boolean isIdExist(int id) throws Exception {
-		for (Language lng : getAllLanguages()) {
+	private boolean isIdExist(int id) {
+		for (Language lng : languageRepository.findAll()) {
 			if (lng.getId() == id) {
 				return true;
 			}
